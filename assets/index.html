@@ -2,196 +2,866 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<title>Porimap — Price Calculator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Field Work Report Generator</title>
+<link rel="manifest" href="manifest.json">
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+  }
+</script>
 <style>
-  :root{
-    --bg:#FAFAF8; --card:#FFFFFF; --ink:#161816; --muted:#8A918D;
-    --line:#E2E4DE; --accent:#0f6a54; --field:#EDEFEA;
-  }
-  .dark{
-    --bg:#0B0D0C; --card:#111413; --ink:#EDEEEC; --muted:#7C857F;
-    --line:#1E2321; --accent:#2BA884; --field:#151918;
-  }
-  *{box-sizing:border-box;margin:0;padding:0}
-  html{-webkit-text-size-adjust:100%}
-  body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter",system-ui,sans-serif;
-    background:var(--bg);color:var(--ink);min-height:100vh;
-    -webkit-font-smoothing:antialiased;transition:background .3s,color .3s}
-  header{border-bottom:1px solid var(--line)}
-  .bar{max-width:520px;margin:0 auto;padding:0 24px;height:64px;display:flex;align-items:center;justify-content:space-between}
-  .brand{display:flex;align-items:center;gap:12px;min-width:0}
-  .mark{flex-shrink:0;width:8px;height:8px;border-radius:50%;background:var(--accent)}
-  .brand b{font-size:17px;font-weight:600;letter-spacing:-.02em}
-  .brand small{display:block;font-size:12px;font-weight:400;color:var(--muted);letter-spacing:.02em}
-  #themeBtn{flex-shrink:0;width:38px;height:38px;border-radius:50%;border:1px solid var(--line);
-    background:transparent;color:var(--ink);cursor:pointer;display:flex;align-items:center;justify-content:center}
-  #themeBtn:active{transform:scale(.94)}
-  main{max-width:520px;margin:0 auto;padding:32px 24px 56px;display:grid;gap:36px}
-  main > *{min-width:0}
-  .eyebrow{font-size:11px;font-weight:600;letter-spacing:.14em;color:var(--muted);margin-bottom:14px}
-  .field{min-width:0;background:var(--field);border:1px solid var(--line);border-radius:16px;
-    padding:6px 18px;display:flex;align-items:baseline;gap:10px;transition:border-color .2s}
-  .field:focus-within{border-color:var(--accent);background:var(--card)}
-  .field .unit{font-size:13px;color:var(--muted);flex-shrink:0}
-  input{flex:1;min-width:0;max-width:100%;border:none;background:transparent;color:var(--ink);
-    font-size:30px;font-weight:300;letter-spacing:-.02em;padding:12px 0;outline:none;font-variant-numeric:tabular-nums}
-  input::placeholder{color:var(--muted);opacity:.55}
-  input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
-  input[type=number]{-moz-appearance:textfield;appearance:textfield}
-  .gap{height:18px}
-  #calcBtn{width:100%;margin-top:26px;padding:17px;border:none;border-radius:16px;background:var(--ink);color:var(--bg);
-    font-size:16px;font-weight:600;letter-spacing:.01em;cursor:pointer;transition:opacity .2s,transform .1s}
-  #calcBtn:active{transform:scale(.985);opacity:.88}
-  #result{display:none;padding-top:30px;margin-top:30px;border-top:1px solid var(--line)}
-  #result.show{display:block;animation:rise .35s cubic-bezier(.2,.7,.3,1)}
-  @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-  #priceBig{font-size:clamp(44px,14vw,64px);font-weight:200;letter-spacing:-.04em;
-    font-variant-numeric:tabular-nums;overflow-wrap:anywhere;line-height:1.05}
-  #priceBig small{font-size:.5em;font-weight:300;color:var(--muted)}
-  #breakdown{margin-top:10px;font-size:13.5px;color:var(--muted);line-height:1.6}
-  #formula{margin-top:16px;font-size:12.5px;color:var(--muted);overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
-  .rowBtns{display:flex;gap:0;margin-top:20px;border-top:1px solid var(--line)}
-  .ghost{flex:1;padding:14px 0;border:none;border-bottom:1px solid var(--line);background:transparent;
-    color:var(--ink);font-size:14px;font-weight:500;cursor:pointer}
-  .ghost + .ghost{border-left:1px solid var(--line)}
-  .ghost:active{opacity:.55}
-  .hist-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:4px}
-  .hist-head h2{font-size:11px;font-weight:600;letter-spacing:.14em;color:var(--muted)}
-  #histCount{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
-  #hist{list-style:none}
-  #hist li{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;
-    padding:13px 2px;border-bottom:1px solid var(--line);font-size:14.5px;min-width:0}
-  #hist li span{color:var(--muted);font-variant-numeric:tabular-nums;min-width:0;overflow-wrap:anywhere}
-  #hist li b{font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
-  .empty{color:var(--muted);font-size:14px;padding:16px 2px;border-bottom:1px solid var(--line)}
-  footer{text-align:center;font-size:11.5px;letter-spacing:.08em;color:var(--muted);padding-bottom:8px}
-  #toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);max-width:90vw;text-align:center;
-    background:var(--ink);color:var(--bg);padding:12px 24px;border-radius:99px;font-size:13.5px;font-weight:500;
-    display:none;z-index:50;box-shadow:0 8px 30px rgba(0,0,0,.18)}
+:root{
+  --bg:#f5f7fb;
+  --card:#ffffff;
+  --primary:#2563eb;
+  --primary-600:#1d4ed8;
+  --text:#0f172a;
+  --muted:#64748b;
+  --danger:#dc2626;
+  --border:#e2e8f0;
+  --radius:16px;
+  --shadow:0 8px 24px rgba(2,6,23,0.08);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  -webkit-font-smoothing:antialiased;
+}
+#app{max-width:480px;margin:0 auto;min-height:100%;display:flex;flex-direction:column}
+header{
+  position:sticky;top:0;z-index:10;
+  background:var(--card);
+  border-bottom:1px solid var(--border);
+  padding:12px 16px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+header h1{font-size:16px;margin:0;font-weight:700}
+.customer{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)}
+.btn{
+  appearance:none;border:0;border-radius:12px;padding:10px 14px;font-weight:600;font-size:14px;
+  background:var(--primary);color:white;cursor:pointer;
+}
+.btn.secondary{background:#e2e8f0;color:var(--text)}
+.btn.danger{background:var(--danger)}
+.btn.history-btn{background:#059669;color:white;margin-bottom:10px;width:100%;text-align:center;}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+main{flex:1;padding:16px;display:flex;flex-direction:column;gap:12px;}
+.card{
+  background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
+  padding:16px;border:1px solid var(--border);
+}
+h2{margin:0 0 12px;font-size:18px}
+label{display:block;font-size:13px;margin:12px 0 6px;color:var(--muted);font-weight:600}
+input,select,textarea{
+  width:100%;padding:12px 12px;border:1px solid var(--border);border-radius:12px;
+  font-size:15px;background:#fff;color:var(--text);outline:none;
+}
+input:focus,select:focus,textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.15)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.help{font-size:12px;color:var(--muted);margin-top:4px}
+.actions{display:flex;gap:10px;margin-top:18px}
+.actions .btn{flex:1}
+.review{
+  background:#0f172a;color:#e2e8f0;border-radius:12px;padding:12px;font-family:ui-monospace,Menlo,Monaco,Consolas,monospace;
+  font-size:13px;white-space:pre-wrap;word-break:break-word;max-height:360px;overflow:auto;
+}
+.footer{margin-top:auto;padding:16px;text-align:center;color:var(--muted);font-size:12px}
+.toggle{display:flex;gap:8px;flex-wrap:wrap}
+.toggle button{flex:1;border:1px solid var(--border);background:#fff;padding:10px;border-radius:10px;cursor:pointer;font-size:12px}
+.toggle button.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.history-container{max-height:450px;overflow-y:auto;padding-right:4px;}
+.history-item{background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px;font-size:13px;}
 </style>
 </head>
 <body>
+<div id="app">
 <header>
-  <div class="bar">
-    <div class="brand"><div class="mark"></div><div><b>Porimap</b><small>পরিমাপ · measure the price</small></div></div>
-    <button id="themeBtn" title="Toggle theme" aria-label="Toggle theme"></button>
+  <div>
+    <h1>Field Work Report</h1>
+    <div class="customer" id="customerBadge">No customer</div>
+  </div>
+  <div style="display:flex; gap:6px;" id="headerBtns">
+    <button class="btn secondary" id="cancelBtn">Cancel</button>
   </div>
 </header>
-
-<main>
-  <section>
-    <p class="eyebrow">RATE — PER KILOGRAM</p>
-    <div class="field"><span class="unit">৳</span><input id="rate" type="number" min="0" step="any" inputmode="decimal" placeholder="0" /></div>
-    <div class="gap"></div>
-    <p class="eyebrow">WEIGHT — GRAMS</p>
-    <div class="field"><input id="weight" type="number" min="0" step="any" inputmode="decimal" placeholder="0" /><span class="unit">g</span></div>
-    <button id="calcBtn">Calculate</button>
-
-    <div id="result">
-      <p class="eyebrow">TOTAL</p>
-      <p id="priceBig"></p>
-      <p id="breakdown"></p>
-      <p id="formula"></p>
-      <div class="rowBtns">
-        <button class="ghost" id="copyBtn">Copy</button>
-        <button class="ghost" id="clearBtn">Clear</button>
-      </div>
-    </div>
-  </section>
-
-  <section>
-    <div class="hist-head"><h2>RECENT</h2><span id="histCount"></span></div>
-    <ul id="hist"></ul>
-  </section>
-
-  <footer>PORIMAP · WEIGH · PRICE · REPEAT</footer>
-</main>
-
-<div id="toast"></div>
+<main id="main"></main>
+<div class="footer">Optimized for Mobile Harness / Web-to-App</div>
+</div>
 
 <script>
-  const $ = id => document.getElementById(id);
-  const store = {
-    load() { try { return JSON.parse(localStorage.getItem('porimap_v2')) || {}; } catch(e){ return {}; } },
-    save(d) { try { localStorage.setItem('porimap_v2', JSON.stringify(d)); } catch(e){} }
-  };
-  let data = Object.assign({ rate:'', theme:'light', hist:[] }, store.load());
+const $= s => document.querySelector(s); const$$ = s => Array.from(document.querySelectorAll(s));
 
-  const SUN = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5 5l1.7 1.7M17.3 17.3L19 19M19 5l-1.7 1.7M6.7 17.3L5 19"/></svg>';
-  const MOON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13.5A8 8 0 0 1 10.5 4 8 8 0 1 0 20 13.5z"/></svg>';
+const APPS_SCRIPT_URL = 'YOUR_APPS_SCRIPT_URL_HERE';
 
-  function applyTheme(){
-    document.documentElement.classList.toggle('dark', data.theme === 'dark');
-    $('themeBtn').innerHTML = data.theme === 'dark' ? MOON : SUN;
-  }
-  $('themeBtn').onclick = () => {
-    data.theme = data.theme === 'dark' ? 'light' : 'dark';
-    store.save(data); applyTheme();
-  };
-  applyTheme();
+const savedState = localStorage.getItem('field_report_current_state');
+const state = savedState ? JSON.parse(savedState) : {
+  customerName:'',
+  taskType:null,
+  poiBefore:{},
+  poiAfter:{},
+  tktBefore:{},
+  tktAfter:{},
+  r6Warning:false,
+  step:'WELCOME'
+};
 
-  if (data.rate !== '') $('rate').value = data.rate;
-  $('rate').addEventListener('input', e => { data.rate = e.target.value; store.save(data); });
+state.history = JSON.parse(localStorage.getItem('field_report_history') || '[]');
 
-  function toast(msg){
-    const t = $('toast'); t.textContent = msg; t.style.display = 'block';
-    clearTimeout(t._h); t._h = setTimeout(() => t.style.display = 'none', 1800);
-  }
+function saveCurrentState() {
+  localStorage.setItem('field_report_current_state', JSON.stringify({
+    customerName: state.customerName,
+    taskType: state.taskType,
+    poiBefore: state.poiBefore,
+    poiAfter: state.poiAfter,
+    tktBefore: state.tktBefore,
+    tktAfter: state.tktAfter,
+    r6Warning: state.r6Warning,
+    step: state.step
+  }));
+}
 
-  function renderHist(){
-    const ul = $('hist'); ul.innerHTML = '';
-    $('histCount').textContent = data.hist.length ? data.hist.length + ' entries' : '';
-    if (!data.hist.length) { ul.innerHTML = '<li class="empty">Nothing calculated yet</li>'; return; }
-    data.hist.forEach(h => {
-      const li = document.createElement('li');
-      li.innerHTML = `<span>${h.weight} g · ৳${h.rate} / kg</span><b>৳${h.total}</b>`;
-      ul.appendChild(li);
+function render(){
+  saveCurrentState();
+  const main = $('#main');
+  main.innerHTML = '';
+  const step = state.step;
+  updateCustomerBadge();
+
+  const headerBtns = $('#headerBtns');
+  headerBtns.innerHTML = `
+    <button class="btn secondary" id="cancelBtn" style="padding:10px 12px; font-size:14px;">Cancel</button>
+  `;
+  $('#cancelBtn').onclick = cancelTask;
+
+  if(step==='WELCOME') return renderWelcome(main);
+  if(step==='CUSTOMER_NAME') return renderCustomer(main);
+  if(step==='TASK_TYPE') return renderTaskType(main);
+  if(step==='POI_BEFORE_FORM') return renderPoiBeforeForm(main);
+  if(step==='POI_BEFORE_REVIEW') return renderPoiBeforeReview(main);
+  if(step==='POI_AFTER_FORM') return renderPoiAfterForm(main);
+  if(step==='POI_AFTER_REVIEW') return renderPoiAfterReview(main);
+  if(step==='TKT_BEFORE_FORM') return renderTktBeforeForm(main);
+  if(step==='TKT_BEFORE_REVIEW') return renderTktBeforeReview(main);
+  if(step==='TKT_AFTER_FORM') return renderTktAfterForm(main);
+  if(step==='TKT_AFTER_REVIEW') return renderTktAfterReview(main);
+  if(step==='R6_CHECK') return renderR6Check(main);
+  if(step==='HISTORY') return renderHistory(main);
+}
+
+function updateCustomerBadge(){
+  $('#customerBadge').textContent = state.customerName ? `Customer: ${state.customerName}` : 'No customer';
+}
+
+function cancelTask(){
+  localStorage.removeItem('field_report_current_state');
+  Object.assign(state,{
+    customerName:'',
+    taskType:null,
+    poiBefore:{},
+    poiAfter:{},
+    tktBefore:{},
+    tktAfter:{},
+    r6Warning:false,
+    step:'WELCOME'
+  });
+  updateCustomerBadge();
+  render();
+}
+
+function renderWelcome(main){
+  const card = cardEl('Welcome','Start a new field work report');
+  card.innerHTML += `
+    <button class="btn history-btn" id="viewHistoryBtn">📋 ပြီးခဲ့သော Task မှတ်တမ်းများ ကြည့်ရန်</button>
+    <div class="actions"><button class="btn" id="startBtn">Start New Task</button></div>
+  `;
+  main.appendChild(card);
+  $('#startBtn').onclick = ()=>{state.step='CUSTOMER_NAME'; render();};
+  $('#viewHistoryBtn').onclick = ()=>{state.step='HISTORY'; render();};
+}
+
+function renderHistory(main){
+  const card = cardEl('Task History', 'ဒီနေ့ လုပ်ဆောင်ခဲ့သော မှတ်တမ်းများ (Edit ပြုလုပ်နိုင်သည်)');
+  let content = '';
+  if(state.history.length === 0) {
+    content = '<p class="help">မှတ်တမ်း မရှိသေးပါ။</p>';
+  } else {
+    content += '<div class="history-container">';
+    state.history.forEach((h, idx)=>{
+      content += `
+        <div class="history-item">
+          <strong>#${idx+1} [${h.type}] - ${h.customer}</strong><br/>
+          <small class="help">${h.date}</small><br/><br/>
+          <strong>--- BEFORE ---</strong>
+          <pre style="margin:5px 0; font-family:monospace; font-size:11px; white-space:pre-wrap;">${escapeHtml(h.beforeSummary)}</pre>
+          <br/>
+          <strong>--- AFTER ---</strong>
+          <pre style="margin:5px 0; font-family:monospace; font-size:11px; white-space:pre-wrap;">${escapeHtml(h.afterSummary)}</pre>
+          <div style="margin-top:10px;">
+            <button class="btn secondary" style="width:100%; font-size:13px; padding:6px;" onclick="editHistoryItem(${idx})">✏️ ဤမှတ်တမ်းကို ပြင်ဆင်မည် (Edit)</button>
+          </div>
+        </div>
+      `;
     });
+    content += '</div>';
   }
-  renderHist();
+  card.innerHTML += content;
+  main.appendChild(card);
 
-  let lastTotal = '';
-  function calculate(){
-    const rate = parseFloat($('rate').value);
-    const weight = parseFloat($('weight').value);
-    if (!(rate > 0) || !(weight > 0)) { toast('Enter a valid rate and weight'); return; }
+  const actionCard = document.createElement('div');
+  actionCard.className = 'card';
+  actionCard.style.padding = '12px 16px';
+  actionCard.innerHTML = `
+    <div class="actions" style="margin-top:0;">
+      <button class="btn secondary" id="historyBottomBackBtn" style="width:100%;">Back</button>
+    </div>
+  `;
+  main.appendChild(actionCard);
 
-    const total = Math.round((rate / 1000) * weight * 100) / 100;   // per-kg rate → gram weight
-    const taka = Math.floor(total);
-    const poisha = Math.round((total - taka) * 100);                // fraction of 1 taka
-    lastTotal = total.toFixed(2);
+  $('#historyBottomBackBtn').onclick = ()=>{ state.step = 'WELCOME'; render(); };
+}
 
-    $('priceBig').innerHTML = `৳${taka}.<small>${String(poisha).padStart(2,'0')}</small>`;
-    $('breakdown').textContent = `${taka} taka and ${poisha} poisha — .${String(poisha).padStart(2,'0')} is ${poisha}% of one taka`;
-    $('formula').textContent = `৳${rate} / kg × ${weight} g = ৳${lastTotal}`;
-    const r = $('result');
-    r.classList.remove('show'); void r.offsetWidth; r.classList.add('show');
-
-    data.hist.unshift({ rate, weight, total: lastTotal });
-    data.hist = data.hist.slice(0, 8);
-    store.save(data); renderHist();
+function editHistoryItem(idx) {
+  const h = state.history[idx];
+  if(!h) return;
+  state.customerName = h.customer;
+  state.taskType = h.type;
+  
+  if(h.type === 'POI') {
+    state.step = 'POI_AFTER_FORM';
+  } else {
+    state.step = 'TKT_AFTER_FORM';
   }
-  $('calcBtn').onclick = calculate;
+  state.editingHistoryIndex = idx;
+  render();
+}
 
-  // Enter: rate → weight → calculate
-  $('rate').addEventListener('keydown', e => {
-    if (e.key === 'Enter') { e.preventDefault(); $('weight').focus(); }
+function renderCustomer(main){
+  const card = cardEl('Customer Name','Enter customer name to begin');
+  card.innerHTML += `
+    <label>Customer Name</label>
+    <input id="custInput" value="${escapeAttr(state.customerName)}" placeholder="e.g. ACME Corp" />
+    <div class="actions">
+      <button class="btn secondary" id="backBtn">Back</button>
+      <button class="btn" id="nextBtn">Next</button>
+    </div>`;
+  main.appendChild(card);
+  $('#nextBtn').onclick = ()=>{
+    const val = $('#custInput').value.trim();
+    if(!val){alert('Please enter customer name');return;}
+    state.customerName = val;
+    state.step='TASK_TYPE'; render();
+  };
+  $('#backBtn').onclick = ()=>{state.step='WELCOME'; render();};
+}
+
+function renderTaskType(main){
+  const card = cardEl('Select Task Type','Choose POI or TKT');
+  card.innerHTML += `
+    <div class="row">
+      <button class="btn" id="poiBtn">POI</button>
+      <button class="btn secondary" id="tktBtn">TKT</button>
+    </div>
+    <div class="actions"><button class="btn secondary" id="backBtn">Back</button></div>`;
+  main.appendChild(card);
+  $('#poiBtn').onclick = ()=>{state.taskType='POI'; state.step='POI_BEFORE_FORM'; render();};
+  $('#tktBtn').onclick = ()=>{state.taskType='TKT'; state.step='TKT_BEFORE_FORM'; render();};
+  $('#backBtn').onclick = ()=>{state.step='CUSTOMER_NAME'; render();};
+}
+
+function cardEl(title,sub){
+  const d = document.createElement('div');
+  d.className='card';
+  d.innerHTML = `<h2>${title}</h2><div class="help">${sub||''}</div>`;
+  return d;
+}
+
+function requiredInputs(form, fields){
+  return fields.every(f=>!!(form[f]||'').toString().trim());
+}
+
+function isNumeric(v){
+  return /^[-+]?\d+(\.\d+)?$/.test(String(v).trim());
+}
+
+function computeTotal(start,end){
+  const s=parseFloat(start), e=parseFloat(end);
+  if(isNaN(s)||isNaN(e)) return '';
+  return Math.abs(e-s);
+}
+
+function collectData(keys, targetObj){
+  keys.forEach(k=>{
+    const el = $('#'+k);
+    if(el) targetObj[k] = el.value.trim();
   });
-  $('weight').addEventListener('keydown', e => {
-    if (e.key === 'Enter') { e.preventDefault(); calculate(); }
+}
+
+/* POI */
+const poiBeforeFields = ['poi_num','cus_lat','box_lat','box_name','plan','cpe','sn'];
+
+function renderPoiBeforeForm(main){
+  const data = state.poiBefore;
+  const card = cardEl('POI - BEFORE','Fill details before work');
+  card.innerHTML += fields([
+    {k:'poi_num',label:'POI Number', def: data.poi_num || ''},
+    {k:'cus_lat',label:'Customer Lat/Long', def: data.cus_lat || ''},
+    {k:'box_lat',label:'Box Lat/Long', def: data.box_lat || ''},
+    {k:'box_name',label:'Box Name', def: data.box_name || ''},
+    {k:'plan',label:'Plan', def: data.plan || ''},
+    {k:'cpe',label:'CPE', def: data.cpe || ''},
+    {k:'sn',label:'SN', def: data.sn || ''},
+  ]);
+  card.innerHTML += `<div class="actions"><button class="btn secondary" id="backBtn">Back</button><button class="btn" id="nextBtn">Review</button></div>`;
+  main.appendChild(card);
+  
+  $('#nextBtn').onclick = ()=>{
+    collectData(poiBeforeFields, data);
+    if(!requiredInputs(data, poiBeforeFields)){alert('All fields required');return;}
+    state.step='POI_BEFORE_REVIEW'; render();
+  };
+  $('#backBtn').onclick = ()=>{state.step='TASK_TYPE'; render();};
+}
+
+function renderPoiBeforeReview(main){
+  const d = state.poiBefore;
+  const out = formatPoiBefore(d);
+  const card = cardEl('POI BEFORE Review',`Customer: ${state.customerName}`);
+  card.innerHTML += `<div class="review">${escapeHtml(out)}</div>`;
+  card.innerHTML += `<div class="actions"><button class="btn secondary" id="backBtn">Back</button><button class="btn secondary" id="copyBtn">Copy Text</button><button class="btn" id="nextBtn">Continue to AFTER</button></div>`;
+  main.appendChild(card);
+  $('#copyBtn').onclick = ()=>copy(out);
+  $('#backBtn').onclick = ()=>{state.step='POI_BEFORE_FORM'; render();};
+  $('#nextBtn').onclick = ()=>{state.step='POI_AFTER_FORM'; render();};
+}
+
+function formatPoiBefore(d){
+  return `Before
+${d.poi_num||''}
+Cus lat - ${d.cus_lat||''}
+Box Lat- ${d.box_lat||''}
+Box name - ${d.box_name||''}
+Plan- ${d.plan||''}
+CPE- ${d.cpe||''}
+SN- ${d.sn||''}
+Remark- Let me start`;
+}
+
+const poiAfterFields = ['cus_lat','box_lat','box_name','plan','old_cpe','old_sn','new_cpe','new_sn','ssid','password','acc_card'];
+
+function renderPoiAfterForm(main){
+  const data = state.poiAfter;
+  if(!data.root_cause) data.root_cause = 'Installation';
+  if(!data.soc_type) data.soc_type = 'SOC';
+
+  const beforeCpe = state.poiBefore.cpe || '';
+  const beforeSn = state.poiBefore.sn || '';
+
+  if(data.old_cpe === undefined) {
+    if(data.root_cause === 'Installation') {
+      data.old_cpe = '-';
+      data.old_sn = '-';
+      data.new_cpe = beforeCpe;
+      data.new_sn = beforeSn;
+    } else {
+      data.old_cpe = beforeCpe;
+      data.old_sn = beforeSn;
+      data.new_cpe = '';
+      data.new_sn = '';
+    }
+  }
+
+  const card = cardEl('POI - AFTER','Fill after work details');
+  card.innerHTML += `
+    <label>Root Cause</label>
+    <div class="toggle" id="rootToggle">
+      ${['Installation','Relocation Address','Installation Type Change','Conversion'].map(v=>`<button type="button" data-val="${v}" class="${data.root_cause===v?'active':''}">${v}</button>`).join('')}
+    </div>`;
+  card.innerHTML += fields([
+    {k:'cus_lat',label:'Customer Lat/Long', def: data.cus_lat || state.poiBefore.cus_lat || ''},
+    {k:'box_lat',label:'Box Lat/Long', def: data.box_lat || state.poiBefore.box_lat || ''},
+    {k:'box_name',label:'Box Name (include Port No)', def: data.box_name || (state.poiBefore.box_name ? state.poiBefore.box_name + '-P11' : '')},
+    {k:'plan',label:'Plan', def: data.plan || state.poiBefore.plan || ''},
+    {k:'old_cpe',label:'Old CPE', def: data.old_cpe},
+    {k:'old_sn',label:'Old SN', def: data.old_sn},
+    {k:'new_cpe',label:'New CPE', def: data.new_cpe},
+    {k:'new_sn',label:'New SN', def: data.new_sn},
+    {k:'ssid',label:'SSID', def: data.ssid || ''},
+    {k:'password',label:'Password', def: data.password || ''},
+    {k:'acc_card',label:'Acc Card', def: data.acc_card || ''},
+  ]);
+  card.innerHTML += `<label>SOC Type</label><div class="toggle" id="socToggle"><button type="button" data-val="SOC" class="${data.soc_type==='SOC'?'active':''}">SOC</button><button type="button" data-val="Drum" class="${data.soc_type==='Drum'?'active':''}">Drum</button></div>`;
+  card.innerHTML += `<div id="socFields"></div>`;
+  card.innerHTML += `<div class="actions"><button class="btn secondary" id="backBtn">Back</button><button class="btn" id="nextBtn">Review</button></div>`;
+  main.appendChild(card);
+
+  initToggle('rootToggle', v=>{
+    collectData(poiAfterFields, data);
+    data.root_cause = v;
+    if(v === 'Installation') {
+      data.old_cpe = '-';
+      data.old_sn = '-';
+      data.new_cpe = beforeCpe;
+      data.new_sn = beforeSn;
+    } else {
+      data.old_cpe = beforeCpe;
+      data.old_sn = beforeSn;
+      data.new_cpe = '';
+      data.new_sn = '';
+    }
+    render();
   });
 
-  $('clearBtn').onclick = () => {
-    $('weight').value = ''; $('result').classList.remove('show');
+  initToggle('socToggle', v=>{
+    collectData(poiAfterFields, data);
+    data.soc_type=v; 
+    renderSocFields();
+  });
+  renderSocFields();
+
+  $('#nextBtn').onclick = ()=>{
+    collectData(poiAfterFields, data);
+    const socEl = $('#soc_val');
+    if(socEl) data.soc_val = socEl.value.trim();
+    if(data.soc_type==='Drum'){
+      const startEl = $('#start_meter');
+      const endEl = $('#end_meter');
+      if(startEl) data.start_meter = startEl.value.trim();
+      if(endEl) data.end_meter = endEl.value.trim();
+    }
+
+    if(!data.root_cause){alert('Select Root Cause');return;}
+    if(!requiredInputs(data, poiAfterFields)){alert('Fill required fields');return;}
+    if(!data.soc_val){alert('Enter SOC/Drum value');return;}
+    if(data.soc_type==='Drum'){
+      if(!isNumeric(data.start_meter)||!isNumeric(data.end_meter)){alert('Start/End Meter must be numeric');return;}
+    }
+    state.step='POI_AFTER_REVIEW'; render();
   };
-  $('copyBtn').onclick = () => {
-    if (!lastTotal) return;
-    const done = () => toast('Copied ৳' + lastTotal);
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText('৳' + lastTotal).then(done).catch(() => toast('৳' + lastTotal));
-    } else { toast('৳' + lastTotal); }
+  $('#backBtn').onclick = ()=>{
+    if(state.editingHistoryIndex !== undefined) {
+      state.step = 'HISTORY';
+    } else {
+      state.step='POI_BEFORE_REVIEW';
+    }
+    render();
   };
+}
+
+function renderSocFields(){
+  const data = state.poiAfter;
+  const container = $('#socFields');
+  if(!container) return;
+  if(data.soc_type==='SOC'){
+    container.innerHTML = `
+      <label>SOC Number/Code</label>
+      <input id="soc_val" value="${escapeAttr(data.soc_val||'')}" placeholder="SOC number"/>`;
+  } else if(data.soc_type==='Drum'){
+    container.innerHTML = `
+      <label>Drum Number/Code</label><input id="soc_val" value="${escapeAttr(data.soc_val||'')}" placeholder="Drum number"/>
+      <label>Start Meter</label><input id="start_meter" value="${escapeAttr(data.start_meter||'')}" inputmode="decimal"/>
+      <label>End Meter</label><input id="end_meter" value="${escapeAttr(data.end_meter||'')}" inputmode="decimal"/>
+      <div class="help" id="meterHelp">Total Meter = |End - Start| = ${computeTotal(data.start_meter,data.end_meter||'')}</div>
+    `;
+    const onMeter = ()=>{
+      const s = $('#start_meter').value.trim();
+      const e = $('#end_meter').value.trim();
+      const h = $('#meterHelp');
+      if(h) h.textContent = 'Total Meter = |End - Start| = ' + (computeTotal(s, e) || '—');
+    };
+    $('#start_meter').addEventListener('input', onMeter);
+    $('#end_meter').addEventListener('input', onMeter);
+  } else {
+    container.innerHTML='';
+  }
+}
+
+function formatPoiAfter(d){
+  const poiNum = state.poiBefore.poi_num || '';
+  const lines=[
+    'After',
+    poiNum,
+    `Root case- ${d.root_cause||''}`,
+    `Cus lat - ${d.cus_lat||''}`,
+    `Box Lat- ${d.box_lat||''}`,
+    `Box Name- ${d.box_name||''}`,
+    `Plan- ${d.plan||''}`,
+    `Old CPE- ${d.old_cpe||'-'}`,
+    `Old SN- ${d.old_sn||'-'}`,
+    `New CPE- ${d.new_cpe||''}`,
+    `New SN- ${d.new_sn||''}`,
+    `SSID - ${d.ssid||''}`,
+    `Password - ${d.password||''}`,
+    `Acc card- ${d.acc_card||''}`,
+    `${d.soc_type||''}- ${d.soc_val||''}`
+  ];
+  if(d.soc_type==='Drum'){
+    lines.push(`Start Meter - ${d.start_meter||''}`);
+    lines.push(`End Meter - ${d.end_meter||''}`);
+    lines.push(`Total Meter - ${computeTotal(d.start_meter,d.end_meter||'')}`);
+  }
+  lines.push('Remark- FINISHED');
+  return lines.join('\n');
+}
+
+function renderPoiAfterReview(main){
+  const d = state.poiAfter;
+  const out = formatPoiAfter(d);
+  const card = cardEl('POI AFTER Review',`Customer: ${state.customerName}`);
+  card.innerHTML += `<div class="review">${escapeHtml(out)}</div>`;
+  card.innerHTML += `<div class="actions"><button class="btn secondary" id="backBtn">Back</button><button class="btn secondary" id="copyBtn">Copy Text</button><button class="btn" id="doneBtn">Done</button></div>`;
+  main.appendChild(card);
+  $('#copyBtn').onclick = ()=>copy(out);
+  $('#backBtn').onclick = ()=>{state.step='POI_AFTER_FORM'; render();};
+  $('#doneBtn').onclick = ()=>{
+    saveToHistory('POI', formatPoiBefore(state.poiBefore), out);
+    state.step='R6_CHECK'; render();
+  };
+}
+
+/* TKT */
+const tktBeforeFields = ['tkt_num','old_box','new_box','old_cid','old_sn','new_cid','new_sn','cus_lat','old_box_lat','new_box_lat','cable_cut','ssid','password','root_cause'];
+
+function renderTktBeforeForm(main){
+  const data = state.tktBefore;
+  const card = cardEl('TKT - BEFORE');
+  card.innerHTML += fields([
+    {k:'tkt_num',label:'TKT Number', def: data.tkt_num || ''},
+    {k:'old_box',label:'Old Box (with Port No)', def: data.old_box || ''},
+    {k:'new_box',label:'New Box (with Port No)', def: data.new_box || ''},
+    {k:'old_cid',label:'Old CID', def: data.old_cid || ''},
+    {k:'old_sn',label:'Old SN', def: data.old_sn || ''},
+    {k:'new_cid',label:'New CID', def: data.new_cid || ''},
+    {k:'new_sn',label:'New SN', def: data.new_sn || ''},
+    {k:'cus_lat',label:'Customer Lat/Long', def: data.cus_lat || ''},
+    {k:'old_box_lat',label:'Box Lat/Long (Old)', def: data.old_box_lat || ''},
+    {k:'new_box_lat',label:'Box Lat/Long (New)', def: data.new_box_lat || ''},
+    {k:'cable_cut',label:'Cable Cut Lat/Long', def: data.cable_cut || ''},
+    {k:'ssid',label:'SSID', def: data.ssid || ''},
+    {k:'password',label:'Password', def: data.password || ''},
+    {k:'root_cause',label:'Root Cause', def: data.root_cause || ''},
+  ]);
+  card.innerHTML += `<div class="actions"><button class="btn secondary" id="backBtn">Back</button><button class="btn" id="nextBtn">Review</button></div>`;
+  main.appendChild(card);
+
+  $('#nextBtn').onclick = ()=>{
+    collectData(tktBeforeFields, data);
+    if(!requiredInputs(data, tktBeforeFields)){alert('All fields required');return;}
+    state.step='TKT_BEFORE_REVIEW'; render();
+  };
+  $('#backBtn').onclick = ()=>{state.step='TASK_TYPE'; render();};
+}
+
+function formatTktBefore(d){
+  return `Before
+\t${d.tkt_num||''}
+Old Box:\t${d.old_box||''}
+New Box:\t${d.new_box||''}
+Old CID:\t${d.old_cid||''}
+Old SN:\t${d.old_sn||''}
+New CID:\t${d.new_cid||''}
+New SN:\t${d.new_sn||''}
+Customer Lat/Long:\t${d.cus_lat||''}
+Box Lat/Long (Old):\t${d.old_box_lat||''}
+Box Lat/Long (New):\t${d.new_box_lat||''}
+Cable cut lat long:\t${d.cable_cut||''}
+SSID:\t${d.ssid||''}
+Password:\t${d.password||''}
+Root Cause:\t${d.root_cause||''}
+Resolution:\t
+Remark: Let me start`;
+}
+
+function renderTktBeforeReview(main){
+  const d = state.tktBefore;
+  const out = formatTktBefore(d);
+  const card = cardEl('TKT BEFORE Review',`Customer: ${state.customerName}`);
+  card.innerHTML += `<div class="review">${escapeHtml(out)}</div>`;
+  card.innerHTML += `<div class="actions"><button class="btn secondary" id="backBtn">Back</button><button class="btn secondary" id="copyBtn">Copy Text</button><button class="btn" id="nextBtn">Continue to AFTER</button></div>`;
+  main.appendChild(card);
+  $('#copyBtn').onclick = ()=>copy(out);
+  $('#backBtn').onclick = ()=>{state.step='TKT_BEFORE_FORM'; render();};
+  $('#nextBtn').onclick = ()=>{state.step='TKT_AFTER_FORM'; render();};
+}
+
+const tktAfterFields = ['tkt_num','old_box','new_box','old_cid','old_sn','new_cid','new_sn','cus_lat','old_box_lat','new_box_lat','cable_cut','ssid','password','root_cause','resolution','extra_remark'];
+
+function renderTktAfterForm(main){
+  const data = state.tktAfter;
+  const before = state.tktBefore;
+  
+  if(data.tkt_num === undefined) {
+    data.tkt_num = before.tkt_num || '';
+    data.old_box = before.old_box || '';
+    data.new_box = before.new_box || '';
+    data.old_cid = before.old_cid || '';
+    data.old_sn = before.old_sn || '';
+    data.new_cid = before.new_cid || '';
+    data.new_sn = before.new_sn || '';
+    data.cus_lat = before.cus_lat || '';
+    data.old_box_lat = before.old_box_lat || '';
+    data.new_box_lat = before.new_box_lat || '';
+    data.cable_cut = before.cable_cut || '';
+    data.ssid = before.ssid || '';
+    data.password = before.password || '';
+    data.root_cause = before.root_cause || '';
+    data.resolution = before.resolution || '';
+    data.extra_remark = '-';
+  }
+
+  if(!data.soc_type) data.soc_type = 'SOC';
+
+  const card = cardEl('TKT - AFTER', 'Edit or fill after details');
+  card.innerHTML += fields([
+    {k:'tkt_num',label:'TKT Number', def: data.tkt_num},
+    {k:'old_box',label:'Old Box (with Port No)', def: data.old_box},
+    {k:'new_box',label:'New Box (with Port No)', def: data.new_box},
+    {k:'old_cid',label:'Old CID', def: data.old_cid},
+    {k:'old_sn',label:'Old SN', def: data.old_sn},
+    {k:'new_cid',label:'New CID', def: data.new_cid},
+    {k:'new_sn',label:'New SN', def: data.new_sn},
+    {k:'cus_lat',label:'Customer Lat/Long', def: data.cus_lat},
+    {k:'old_box_lat',label:'Box Lat/Long (Old)', def: data.old_box_lat},
+    {k:'new_box_lat',label:'Box Lat/Long (New)', def: data.new_box_lat},
+    {k:'cable_cut',label:'Cable Cut Lat/Long', def: data.cable_cut},
+    {k:'ssid',label:'SSID', def: data.ssid},
+    {k:'password',label:'Password', def: data.password},
+    {k:'root_cause',label:'Root Cause', def: data.root_cause},
+    {k:'resolution',label:'Resolution', def: data.resolution}
+  ]);
+  card.innerHTML += `<label>SOC Type</label><div class="toggle" id="socToggle"><button type="button" data-val="SOC" class="${data.soc_type==='SOC'?'active':''}">SOC</button><button type="button" data-val="Drum" class="${data.soc_type==='Drum'?'active':''}">Drum</button></div>`;
+  card.innerHTML += `<div id="socFields"></div>`;
+  card.innerHTML += `<label>Extra Remark (optional)</label><input id="extra_remark" value="${escapeAttr(data.extra_remark || '-')}" placeholder="-"/>`;
+  card.innerHTML += `<div class="actions"><button class="btn secondary" id="backBtn">Back</button><button class="btn" id="nextBtn">Review</button></div>`;
+  main.appendChild(card);
+
+  initToggle('socToggle', v=>{
+    collectData(tktAfterFields, data);
+    data.soc_type=v; 
+    renderTktSocFields();
+  });
+  renderTktSocFields();
+
+  $('#nextBtn').onclick = ()=>{
+    collectData(tktAfterFields, data);
+    data.extra_remark = $('#extra_remark').value.trim() || '-';
+    const socEl = $('#soc_val');
+    if(socEl) data.soc_val = socEl.value.trim();
+    if(data.soc_type==='Drum'){
+      const startEl = $('#start_meter');
+      const endEl = $('#end_meter');
+      if(startEl) data.start_meter = startEl.value.trim();
+      if(endEl) data.end_meter = endEl.value.trim();
+    }
+
+    if(!data.resolution){alert('Resolution required');return;}
+    if(!data.soc_type){alert('Select SOC Type');return;}
+    if(!data.soc_val){alert('Enter SOC/Drum value');return;}
+    if(data.soc_type==='Drum'){
+      if(!isNumeric(data.start_meter)||!isNumeric(data.end_meter)){alert('Start/End Meter must be numeric');return;}
+    }
+    state.step='TKT_AFTER_REVIEW'; render();
+  };
+  $('#backBtn').onclick = ()=>{
+    if(state.editingHistoryIndex !== undefined) {
+      state.step = 'HISTORY';
+    } else {
+      state.step='TKT_BEFORE_REVIEW';
+    }
+    render();
+  };
+}
+
+function renderTktSocFields(){
+  const data = state.tktAfter;
+  const container = $('#socFields');
+  if(!container) return;
+  if(data.soc_type==='SOC'){
+    container.innerHTML = `
+      <label>SOC Number/Code</label>
+      <input id="soc_val" value="${escapeAttr(data.soc_val||'')}" placeholder="SOC number"/>`;
+  } else if(data.soc_type==='Drum'){
+    container.innerHTML = `
+      <label>Drum Number/Code</label><input id="soc_val" value="${escapeAttr(data.soc_val||'')}" placeholder="Drum number"/>
+      <label>Start Meter</label><input id="start_meter" value="${escapeAttr(data.start_meter||'')}" inputmode="decimal"/>
+      <label>End Meter</label><input id="end_meter" value="${escapeAttr(data.end_meter||'')}" inputmode="decimal"/>
+      <div class="help" id="meterHelp">Total Meter = |End - Start| = ${computeTotal(data.start_meter,data.end_meter||'')}</div>
+    `;
+    const onMeter = ()=>{
+      const s = $('#start_meter').value.trim();
+      const e = $('#end_meter').value.trim();
+      const h = $('#meterHelp');
+      if(h) h.textContent = 'Total Meter = |End - Start| = ' + (computeTotal(s, e) || '—');
+    };
+    $('#start_meter').addEventListener('input', onMeter);
+    $('#end_meter').addEventListener('input', onMeter);
+  } else container.innerHTML='';
+}
+
+function formatTktAfter(d){
+  const socLine = `${d.soc_type||''}:\t${d.soc_val||''}`;
+  const meterLines = d.soc_type==='Drum' ? [
+    `Start Meter:\t${d.start_meter||''}`,
+    `End Meter:\t${d.end_meter||''}`,
+    `Total Meter:\t${computeTotal(d.start_meter,d.end_meter||'')}`
+  ].join('\n') : '';
+  const extra = d.extra_remark && d.extra_remark!=='-' ? `\n${d.extra_remark}` : '';
+  return `After
+\t${d.tkt_num||''}
+Old Box:\t${d.old_box||''}
+New Box:\t${d.new_box||''}
+Old CID:\t${d.old_cid||''}
+Old SN:\t${d.old_sn||''}
+New CID:\t${d.new_cid||''}
+New SN:\t${d.new_sn||''}
+${socLine}
+${meterLines}
+Customer Lat/Long:\t${d.cus_lat||''}
+Box Lat/Long (Old):\t${d.old_box_lat||''}
+Box Lat/Long (New):\t${d.new_box_lat||''}
+Cable cut lat long:\t${d.cable_cut||''}
+SSID:\t${d.ssid||''}
+Password:\t${d.password||''}
+Root Cause:\t${d.root_cause||''}
+Resolution:\t${d.resolution||''}
+Remark: Finished${extra}`.trim();
+}
+
+function renderTktAfterReview(main){
+  const d = state.tktAfter;
+  const out = formatTktAfter(d);
+  const card = cardEl('TKT BEFORE Review',`Customer: ${state.customerName}`);
+  card.innerHTML += `<div class="review">${escapeHtml(out)}</div>`;
+  card.innerHTML += `<div class="actions"><button class="btn secondary" id="backBtn">Back</button><button class="btn secondary" id="copyBtn">Copy Text</button><button class="btn" id="doneBtn">Done</button></div>`;
+  main.appendChild(card);
+  $('#copyBtn').onclick = ()=>copy(out);
+  $('#backBtn').onclick = ()=>{state.step='TKT_AFTER_FORM'; render();};
+  $('#doneBtn').onclick = ()=>{
+    saveToHistory('TKT', formatTktBefore(state.tktBefore), out);
+    state.step='R6_CHECK'; render();
+  };
+}
+
+function saveToHistory(type, beforeSummary, afterSummary){
+  const record = {
+    type: type,
+    customer: state.customerName,
+    date: new Date().toLocaleString(),
+    beforeSummary: beforeSummary,
+    afterSummary: afterSummary,
+    summary: `--- BEFORE ---\n${beforeSummary}\n\n--- AFTER ---\n${afterSummary}`
+  };
+  
+  if(state.editingHistoryIndex !== undefined && state.history[state.editingHistoryIndex]) {
+    state.history[state.editingHistoryIndex] = record;
+    state.editingHistoryIndex = undefined;
+  } else {
+    state.history.unshift(record);
+  }
+
+  localStorage.setItem('field_report_history', JSON.stringify(state.history));
+  state.latestRecord = record;
+}
+
+/* R6 Check */
+function renderR6Check(main){
+  const card = cardEl('R6 Completion Check','Is R6 Done?');
+  
+  if(!state.r6Warning){
+    card.innerHTML += `<div class="actions"><button class="btn" id="yesBtn">Yes (တင်ပြီးပြီ)</button><button class="btn danger" id="noBtn">No (မတင်ရသေးပါ)</button></div>`;
+    main.appendChild(card);
+    $('#yesBtn').onclick = ()=>{
+      backupToGoogleDrive();
+    };
+    $('#noBtn').onclick = ()=>{
+      state.r6Warning = true;
+      render();
+    };
+  } else {
+    card.style.border = '1px solid var(--danger)';
+    card.innerHTML = `
+      <h2>⚠️ သတိပေးချက် (Warning)</h2>
+      <div class="help" style="color:var(--text);margin-bottom:12px;">R6 မတင်ရသေးပါ။ R6 အရင်တင်ရန် လိုအပ်ပါသည်။ ကျေးဇူးပြု၍ အောက်ပါလင့်ခ်ကို နှိပ်၍ R6 တင်ပေးပါ။</div>
+      <div class="actions">
+        <button class="btn secondary" id="backCheckBtn">ပြန်စစ်မည်</button>
+        <button class="btn" id="openBtn">Open Google Form</button>
+      </div>
+    `;
+    main.appendChild(card);
+    $('#backCheckBtn').onclick = ()=>{ 
+      state.r6Warning = false; 
+      render(); 
+    };
+    $('#openBtn').onclick = ()=>{
+      window.open('https://docs.google.com/forms/u/0/d/e/1FAIpQLScn3t02IzFgjzas6B2r9AO6_BtF-f-M35wrm1JrVB06p4yllw/viewform?pli=1&pli=1&usp=form_confirm','_blank');
+    };
+  }
+}
+
+function backupToGoogleDrive(){
+  if(APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE'){
+    completeTask();
+    return;
+  }
+  
+  const payload = state.latestRecord || state.history[0] || { type: state.taskType, customer: state.customerName, date: new Date().toLocaleString(), summary: 'Completed' };
+
+  fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  }).then(()=>{
+    alert('Google Drive သို့ Backup အောင်မြင်စွာ တင်ပြီးပါပြီ။');
+    completeTask();
+  }).catch(err=>{
+    console.error(err);
+    alert('အင်တာနက်လိုင်း မကောင်းပါ သို့မဟုတ် Drive သို့ ပို့၍မရပါ။ သို့သော် ဖုန်းထဲတွင် မှတ်တမ်း (History) အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။');
+    completeTask();
+  });
+}
+
+function completeTask(){
+  localStorage.removeItem('field_report_current_state');
+  alert('Task completed. You can start a new task.');
+  cancelTask();
+}
+
+/* Helpers */
+function fields(defs){
+  return defs.map(f=>{
+    return `<label>${f.label}</label><input id="${f.k}" value="${escapeAttr(f.def||'')}" placeholder="${f.label}"/>`;
+  }).join('');
+}
+function initToggle(id, onSelect){
+  const container = $('#'+id);
+  if(!container) return;
+  container.querySelectorAll('button').forEach(btn=>{
+    btn.onclick = ()=>{
+      container.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      onSelect(btn.dataset.val);
+    };
+  });
+}
+function copy(text){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(()=>alert('Copied to clipboard'));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+    alert('Copied to clipboard');
+  }
+}
+function escapeHtml(s){return String(s).replace(/[&<>/"]/g,c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','/':'&#x2F;','"':'&quot;' }[c]));}
+function escapeAttr(s){return String(s).replace(/"/g,'&quot;');}
+
+updateCustomerBadge();
+render();
 </script>
 </body>
 </html>
