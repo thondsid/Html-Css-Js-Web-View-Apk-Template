@@ -51,7 +51,7 @@ header h1 img{width:20px;height:20px;object-fit:contain;}
   background:var(--primary);color:white;cursor:pointer;
 }
 .btn.secondary{background:#e2e8f0;color:var(--text)}
-.btn.danger{background:var(--danger)}
+.btn.danger{background:var(--danger); color:white;}
 .btn.history-btn{background:#059669;color:white;margin-bottom:10px;width:100%;text-align:center;}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 main{flex:1;padding:16px;display:flex;flex-direction:column;gap:12px;}
@@ -277,7 +277,7 @@ function renderWelcome(main){
 }
 
 function renderHistory(main){
-  const card = cardEl('Task History', 'နေ့ရက်အလိုက် ခွဲခြားထားသော မှတ်တမ်းများ (Edit ပြုလုပ်နိုင်သည်)');
+  const card = cardEl('Task History', 'နေ့ရက်အလိုက် ခွဲခြားထားသော မှတ်တမ်းများ (ပြင်ဆင်ရန် သို့မဟုတ် ဖျက်ရန်)');
   let content = '';
 
   let filteredHistory = state.history;
@@ -327,8 +327,9 @@ function renderHistory(main){
             <br/>
             <strong>--- AFTER ---</strong>
             <pre style="margin:5px 0; font-family:monospace; font-size:11px; white-space:pre-wrap;">${escapeHtml(h.afterSummary)}</pre>
-            <div style="margin-top:10px;">
-              <button class="btn secondary" style="width:100%; font-size:13px; padding:6px;" onclick="editHistoryItem(${originalIndex})">✏️ ဤမှတ်တမ်းကို ပြင်ဆင်မည် (Edit)</button>
+            <div style="margin-top:10px; display:flex; gap:6px;">
+              <button class="btn secondary" style="flex:1; font-size:13px; padding:6px;" onclick="editHistoryItem(${originalIndex})">✏️ ပြင်ဆင်မည်</button>
+              <button class="btn danger" style="flex:1; font-size:13px; padding:6px;" onclick="deleteHistoryItem(${originalIndex})">🗑️ ဖျက်မည်</button>
             </div>
           </div>
         `;
@@ -359,6 +360,15 @@ function renderHistory(main){
       state.selectedFilterDate = e.target.value;
       render();
     };
+  }
+}
+
+function deleteHistoryItem(idx) {
+  const confirmDelete = confirm("⚠️ သေချာပါသလား?\nဤမှတ်တမ်းကို ဖျက်လိုက်ပါက ပြန်လည် restore လုပ်၍မရတော့ပါ။");
+  if(confirmDelete) {
+    state.history.splice(idx, 1);
+    localStorage.setItem('field_report_history', JSON.stringify(state.history));
+    render();
   }
 }
 
@@ -393,8 +403,9 @@ function renderSearchResult(main){
           <br/>
           <strong>--- AFTER ---</strong>
           <pre style="margin:5px 0; font-family:monospace; font-size:11px; white-space:pre-wrap;">${escapeHtml(h.afterSummary)}</pre>
-          <div style="margin-top:10px;">
-            <button class="btn secondary" style="width:100%; font-size:13px; padding:6px;" onclick="editHistoryItem(${originalIndex})">✏️ ပြင်ဆင်မည် (Edit)</button>
+          <div style="margin-top:10px; display:flex; gap:6px;">
+            <button class="btn secondary" style="flex:1; font-size:13px; padding:6px;" onclick="editHistoryItem(${originalIndex})">✏️ ပြင်ဆင်မည်</button>
+            <button class="btn danger" style="flex:1; font-size:13px; padding:6px;" onclick="deleteHistoryItem(${originalIndex})">🗑️ ဖျက်မည်</button>
           </div>
         </div>
       `;
