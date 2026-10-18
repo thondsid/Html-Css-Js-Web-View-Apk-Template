@@ -159,7 +159,6 @@ input:focus,select:focus,textarea:focus{border-color:var(--primary);box-shadow:0
     <button class="close-sidebar" id="closeSidebarBtn">&times;</button>
   </div>
   <div class="sidebar-menu">
-    <button class="sidebar-item" id="sbGoogleBackup">☁️ Google Backup / Drive</button>
     <button class="sidebar-item" id="sbSearchCustomer">🔍 Search by Customer Name</button>
     <button class="sidebar-item" id="sbSearchCpe">🔍 Search by CPE</button>
     <button class="sidebar-item" id="sbSearchDate">📅 Search by Date</button>
@@ -173,8 +172,6 @@ input:focus,select:focus,textarea:focus{border-color:var(--primary);box-shadow:0
 
 <script>
 const $= s => document.querySelector(s); const$$ = s => Array.from(document.querySelectorAll(s));
-
-const APPS_SCRIPT_URL = 'YOUR_APPS_SCRIPT_URL_HERE';
 
 const savedState = localStorage.getItem('field_report_current_state');
 const state = savedState ? JSON.parse(savedState) : {
@@ -191,7 +188,6 @@ const state = savedState ? JSON.parse(savedState) : {
   searchType: ''
 };
 
-// Check history from localStorage (or act as file/storage mechanism)
 state.history = JSON.parse(localStorage.getItem('field_report_history') || '[]');
 if(!state.selectedFilterDate) state.selectedFilterDate = 'ALL';
 
@@ -241,10 +237,9 @@ function render(){
 }
 
 function updateCustomerBadge(){
-  // Only show customer badge if actively working on a task (not in welcome or history or review idle)
   const activeSteps = ['CUSTOMER_NAME', 'TASK_TYPE', 'POI_BEFORE_FORM', 'POI_BEFORE_REVIEW', 'POI_AFTER_FORM', 'POI_AFTER_REVIEW', 'TKT_BEFORE_FORM', 'TKT_BEFORE_REVIEW', 'TKT_AFTER_FORM', 'TKT_AFTER_REVIEW', 'R6_CHECK'];
   if(activeSteps.includes(state.step) && state.customerName) {
-    $('#customerBadgetextContent' || 'customerBadge').textContent = `Customer: ${state.customerName}`;
+    $('#customerBadge').textContent = `Customer: ${state.customerName}`;
   } else {
     $('#customerBadge').textContent = 'No customer';
   }
@@ -282,7 +277,7 @@ function renderWelcome(main){
 }
 
 function renderHistory(main){
-  const card = cardEl('Task History', 'နေ့ရက်အလိုက် ခွဲခြားထားသော မှတ်တမ်းများ (Edit ပြុလုပ်နိုင်သည်)');
+  const card = cardEl('Task History', 'နေ့ရက်အလိုက် ခွဲခြားထားသော မှတ်တမ်းများ (Edit ပြုလုပ်နိုင်သည်)');
   let content = '';
 
   let filteredHistory = state.history;
@@ -290,7 +285,6 @@ function renderHistory(main){
     filteredHistory = state.history.filter(h => (h.dateOnly || h.date.split(',')[0]) === state.selectedFilterDate);
   }
 
-  // Dates list for filter dropdown inside history card if needed
   const dates = Array.from(new Set(state.history.map(h => h.dateOnly || h.date.split(',')[0]))).filter(Boolean);
 
   content += `
@@ -988,7 +982,7 @@ function renderR6Check(main){
     card.innerHTML += `<div class="actions"><button class="btn" id="yesBtn">Yes (တင်ပြီးပြီ)</button><button class="btn danger" id="noBtn">No (မတင်ရသေးပါ)</button></div>`;
     main.appendChild(card);
     $('#yesBtn').onclick = ()=>{
-      backupToGoogleDrive();
+      completeTask();
     };
     $('#noBtn').onclick = ()=>{
       state.r6Warning = true;
@@ -1015,32 +1009,9 @@ function renderR6Check(main){
   }
 }
 
-function backupToGoogleDrive(){
-  if(APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE'){
-    completeTask();
-    return;
-  }
-  
-  const payload = state.latestRecord || state.history[0] || { type: state.taskType, customer: state.customerName, date: new Date().toLocaleString(), summary: 'Completed' };
-
-  fetch(APPS_SCRIPT_URL, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  }).then(()=>{
-    alert('Google Drive သို့ Backup အောင်မြင်စွာ တင်ပြီးပါပြီ။');
-    completeTask();
-  }).catch(err=>{
-    console.error(err);
-    alert('အင်တာနက်လိုင်း မကောင်းပါ သို့မဟုတ် Drive သို့ ပို့၍မရပါ။ သို့သော် ဖုန်းထဲတွင် မှတ်တမ်း (History) အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။');
-    completeTask();
-  });
-}
-
 function completeTask(){
   localStorage.removeItem('field_report_current_state');
-  alert('Task completed. You can start a new task.');
+  alert('Task completed and saved locally.');
   cancelTask();
 }
 
@@ -1061,15 +1032,6 @@ function toggleSidebar(open) {
 $('#menuToggleBtn').onclick = () => toggleSidebar(true);
 $('#closeSidebarBtn').onclick = () => toggleSidebar(false);
 sidebarOverlay.onclick = () => toggleSidebar(false);
-
-$('#sbGoogleBackup').onclick = () => {
-  toggleSidebar(false);
-  if(APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') {
-    alert('Google Apps Script URL ထည့်သွင်းထားခြင်း မရှိသေးပါ။');
-    return;
-  }
-  backupToGoogleDrive();
-};
 
 $('#sbSearchCustomer').onclick = () => {
   toggleSidebar(false);
