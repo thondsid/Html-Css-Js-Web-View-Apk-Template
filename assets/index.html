@@ -132,6 +132,21 @@ input:focus,select:focus,textarea:focus{border-color:var(--primary);box-shadow:0
 .sidebar-item:hover { background: #e2e8f0; }
 .sidebar-desc { margin-top: 15px; font-size: 12px; color: var(--muted); background: #f1f5f9; padding: 10px; border-radius: 8px; min-height: 60px; }
 .search-box-container { margin-bottom: 12px; display: flex; gap: 6px; }
+
+/* Custom Search Modal */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200;
+  display: none; align-items: center; justify-content: center; padding: 20px;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: #fff; width: 100%; max-width: 360px; border-radius: 16px; padding: 20px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+.modal h3 { margin-top: 0; margin-bottom: 12px; font-size: 16px; }
+.modal input { margin-bottom: 16px; }
+.modal-actions { display: flex; gap: 10px; }
+.modal-actions button { flex: 1; }
 </style>
 </head>
 <body>
@@ -165,9 +180,22 @@ input:focus,select:focus,textarea:focus{border-color:var(--primary);box-shadow:0
     <button class="sidebar-item" id="sbExportFile">💾 Export Data to File</button>
     <button class="sidebar-item" id="sbImportFile">📂 Load Data from File</button>
     <input type="file" id="importFileInput" style="display:none" accept=".json"/>
-    <div class="sidebar-desc" id="sidebarDesc">Description: (Blank)</div>
+    <div class="sidebar-desc" id="sidebarDesc">Description: Tap menu items to search or manage backups.</div>
   </div>
 </div>
+
+<!-- Custom Search Input Modal -->
+<div class="modal-overlay" id="searchModalOverlay">
+  <div class="modal">
+    <h3 id="modalTitle">Search</h3>
+    <input type="text" id="modalInput" placeholder="Enter keyword..." />
+    <div class="modal-actions">
+      <button class="btn secondary" id="modalCancelBtn">Cancel</button>
+      <button class="btn" id="modalSubmitBtn">Search</button>
+    </div>
+  </div>
+</div>
+
 </div>
 
 <script>
@@ -1029,6 +1057,8 @@ function completeTask(){
 /* Sidebar Event Bindings & File Management */
 const sidebar = $('#sidebar');
 const sidebarOverlay = $('#sidebarOverlay');
+const searchModalOverlay = $('#searchModalOverlay');
+let currentSearchType = '';
 
 function toggleSidebar(open) {
   if(open) {
@@ -1040,53 +1070,65 @@ function toggleSidebar(open) {
   }
 }
 
+function openSearchModal(title, type) {
+  currentSearchType = type;
+  $('#modalTitle').textContent = title;
+  $('#modalInput').value = '';
+  searchModalOverlay.classList.add('open');
+  $('#modalInput').focus();
+}
+
+function closeSearchModal() {
+  searchModalOverlay.classList.remove('open');
+}
+
 $('#menuToggleBtn').onclick = () => toggleSidebar(true);
 $('#closeSidebarBtn').onclick = () => toggleSidebar(false);
 sidebarOverlay.onclick = () => toggleSidebar(false);
 
+$('#modalCancelBtn').onclick = closeSearchModal;
+
+$('#modalSubmitBtn').onclick = () => {
+  const query = $('#modalInput').value.trim();
+  if(query) {
+    state.searchQuery = query;
+    state.searchType = currentSearchType;
+    state.step = 'SEARCH_RESULT';
+    closeSearchModal();
+    render();
+  } else {
+    alert('Please enter a search keyword.');
+  }
+};
+
 $('#sbSearchCustomer').onclick = () => {
   toggleSidebar(false);
-  const query = prompt('Enter Customer Name to search:');
-  if(query) {
-    state.searchQuery = query.trim();
-    state.searchType = 'Customer';
-    state.step = 'SEARCH_RESULT';
-    render();
-  }
+  openSearchModal('🔍 Search by Customer Name', 'Customer');
 };
 
 $('#sbSearchCpe').onclick = () => {
   toggleSidebar(false);
-  const query = prompt('Enter CPE / SN to search:');
-  if(query) {
-    state.searchQuery = query.trim();
-    state.searchType = 'CPE';
-    state.step = 'SEARCH_RESULT';
-    render();
-  }
+  openSearchModal('🔍 Search by CPE / SN', 'CPE');
 };
 
 $('#sbSearchDate').onclick = () => {
   toggleSidebar(false);
-  const query = prompt('Enter Date (e.g. 10/10/2026):');
-  if(query) {
-    state.searchQuery = query.trim();
-    state.searchType = 'Date';
-    state.step = 'SEARCH_RESULT';
-    render();
-  }
+  openSearchModal('📅 Search by Date (e.g. 10/10/2026)', 'Date');
 };
 
 $('#sbExportFile').onclick = () => {
   toggleSidebar(false);
-  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state.history, null, 2));
-  const downloadAnchor = document.createElement('a');
-  downloadAnchor.setAttribute("href", dataStr);
-  downloadAnchor.setAttribute("download", `field_reports_backup_${new Date().toISOString().slice(0,10)}.json`);
-  document.body.appendChild(downloadAnchor);
-  downloadAnchor.click();
-  downloadAnchor.remove();
-  alert('ဖိုင်အဖြစ် အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ (Export Successful)');
+  try {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state.history, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `field_reports_backup_${new Date().toISOString().slice(0,10)}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  } catch(e) {
+    alert('Export မအောင်မြင်ပါ။ Mobile Harness / App Container တွင် Download Handler ပါဝင်ရန် လိုအပ်ပါသည်။');
+  }
 };
 
 $('#sbImportFile').onclick = () => {
