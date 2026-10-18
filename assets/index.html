@@ -33,7 +33,7 @@ body{
   color:var(--text);
   -webkit-font-smoothing:antialiased;
 }
-#app{max-width:480px;margin:0 auto;min-height:100%;display:flex;flex-direction:column}
+#app{max-width:480px;margin:0 auto;min-height:100%;display:flex;flex-direction:column; position:relative;}
 header{
   position:sticky;top:0;z-index:10;
   background:var(--card);
@@ -41,9 +41,11 @@ header{
   padding:12px 16px;
   display:flex;align-items:center;justify-content:space-between;
 }
-header h1{font-size:16px;margin:0;font-weight:700;display:flex;align-items:center;gap:8px;}
-header h1 img{width:24px;height:24px;object-fit:contain;}
-.customer{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)}
+.header-left {display:flex; align-items:center; gap:8px;}
+header h1{font-size:16px;margin:0;font-weight:700;display:flex;align-items:center;gap:6px;}
+header h1 img{width:20px;height:20px;object-fit:contain;}
+.customer{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted)}
+.menu-btn{background:transparent; border:0; font-size:20px; cursor:pointer; padding:0 4px; color:var(--text);}
 .btn{
   appearance:none;border:0;border-radius:12px;padding:10px 14px;font-weight:600;font-size:14px;
   background:var(--primary);color:white;cursor:pointer;
@@ -76,23 +78,97 @@ input:focus,select:focus,textarea:focus{border-color:var(--primary);box-shadow:0
 .toggle{display:flex;gap:8px;flex-wrap:wrap}
 .toggle button{flex:1;border:1px solid var(--border);background:#fff;padding:10px;border-radius:10px;cursor:pointer;font-size:12px}
 .toggle button.active{background:var(--primary);color:#fff;border-color:var(--primary)}
-.history-container{max-height:450px;overflow-y:auto;padding-right:4px;}
-.history-item{background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px;font-size:13px;}
+.history-container{max-height:480px;overflow-y:auto;padding-right:4px;}
+.day-group{
+  border:2px solid var(--primary);
+  border-radius:14px;
+  padding:12px;
+  margin-bottom:16px;
+  background:#f8fafc;
+}
+.day-header{
+  font-weight:bold;
+  color:var(--primary-600);
+  font-size:14px;
+  margin-bottom:10px;
+  padding-bottom:6px;
+  border-bottom:1px dashed var(--border);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.history-item{
+  background:#ffffff;
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:12px;
+  margin-bottom:10px;
+  font-size:13px;
+  box-shadow:0 2px 6px rgba(0,0,0,0.03);
+}
+.history-item:last-child{margin-bottom:0;}
+
+/* Sidebar Styles */
+.sidebar-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100;
+  display: none; opacity: 0; transition: opacity 0.3s;
+}
+.sidebar-overlay.open { display: block; opacity: 1; }
+.sidebar {
+  position: fixed; top: 0; left: -280px; width: 280px; height: 100%;
+  background: var(--card); z-index: 101; box-shadow: 4px 0 20px rgba(0,0,0,0.1);
+  transition: left 0.3s ease; display: flex; flex-direction: column; padding: 20px;
+}
+.sidebar.open { left: 0; }
+.sidebar-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 16px; }
+.sidebar-header h3 { margin: 0; font-size: 16px; color: var(--text); }
+.close-sidebar { background: none; border: 0; font-size: 20px; cursor: pointer; color: var(--muted); }
+.sidebar-menu { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; flex: 1; }
+.sidebar-item {
+  background: #f8fafc; border: 1px solid var(--border); padding: 10px 12px; border-radius: 10px;
+  text-align: left; font-size: 14px; font-weight: 600; cursor: pointer; color: var(--text);
+  display: flex; align-items: center; gap: 8px; transition: background 0.2s;
+}
+.sidebar-item:hover { background: #e2e8f0; }
+.sidebar-desc { margin-top: 15px; font-size: 12px; color: var(--muted); background: #f1f5f9; padding: 10px; border-radius: 8px; min-height: 60px; }
+.search-box-container { margin-bottom: 12px; display: flex; gap: 6px; }
 </style>
 </head>
 <body>
 <div id="app">
 <header>
-  <div>
-    <h1><img src="icon.png" alt="Logo"> Field Reports</h1>
-    <div class="customer" id="customerBadge">No customer</div>
+  <div class="header-left">
+    <button class="menu-btn" id="menuToggleBtn">☰</button>
+    <div>
+      <h1><img src="icon.png" alt="Logo"> Field Reports</h1>
+      <div class="customer" id="customerBadge">No customer</div>
+    </div>
   </div>
-  <div style="display:flex; gap:6px;" id="headerBtns">
+  <div style="display:flex; gap:6px; align-items:center;" id="headerBtns">
     <button class="btn secondary" id="cancelBtn">Cancel</button>
   </div>
 </header>
 <main id="main"></main>
 <div class="footer">Optimized for Mobile Harness / Web-to-App</div>
+
+<!-- Sidebar Menu -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <h3>⚙️ Menu & Tools</h3>
+    <button class="close-sidebar" id="closeSidebarBtn">&times;</button>
+  </div>
+  <div class="sidebar-menu">
+    <button class="sidebar-item" id="sbGoogleBackup">☁️ Google Backup / Drive</button>
+    <button class="sidebar-item" id="sbSearchCustomer">🔍 Search by Customer Name</button>
+    <button class="sidebar-item" id="sbSearchCpe">🔍 Search by CPE</button>
+    <button class="sidebar-item" id="sbSearchDate">📅 Search by Date</button>
+    <button class="sidebar-item" id="sbExportFile">💾 Export Data to File</button>
+    <button class="sidebar-item" id="sbImportFile">📂 Load Data from File</button>
+    <input type="file" id="importFileInput" style="display:none" accept=".json"/>
+    <div class="sidebar-desc" id="sidebarDesc">Description: (Blank)</div>
+  </div>
+</div>
 </div>
 
 <script>
@@ -109,10 +185,15 @@ const state = savedState ? JSON.parse(savedState) : {
   tktBefore:{},
   tktAfter:{},
   r6Warning:false,
-  step:'WELCOME'
+  step:'WELCOME',
+  selectedFilterDate: 'ALL',
+  searchQuery: '',
+  searchType: ''
 };
 
+// Check history from localStorage (or act as file/storage mechanism)
 state.history = JSON.parse(localStorage.getItem('field_report_history') || '[]');
+if(!state.selectedFilterDate) state.selectedFilterDate = 'ALL';
 
 function saveCurrentState() {
   localStorage.setItem('field_report_current_state', JSON.stringify({
@@ -123,7 +204,10 @@ function saveCurrentState() {
     tktBefore: state.tktBefore,
     tktAfter: state.tktAfter,
     r6Warning: state.r6Warning,
-    step: state.step
+    step: state.step,
+    selectedFilterDate: state.selectedFilterDate,
+    searchQuery: state.searchQuery,
+    searchType: state.searchType
   }));
 }
 
@@ -153,10 +237,17 @@ function render(){
   if(step==='TKT_AFTER_REVIEW') return renderTktAfterReview(main);
   if(step==='R6_CHECK') return renderR6Check(main);
   if(step==='HISTORY') return renderHistory(main);
+  if(step==='SEARCH_RESULT') return renderSearchResult(main);
 }
 
 function updateCustomerBadge(){
-  $('#customerBadge').textContent = state.customerName ? `Customer: ${state.customerName}` : 'No customer';
+  // Only show customer badge if actively working on a task (not in welcome or history or review idle)
+  const activeSteps = ['CUSTOMER_NAME', 'TASK_TYPE', 'POI_BEFORE_FORM', 'POI_BEFORE_REVIEW', 'POI_AFTER_FORM', 'POI_AFTER_REVIEW', 'TKT_BEFORE_FORM', 'TKT_BEFORE_REVIEW', 'TKT_AFTER_FORM', 'TKT_AFTER_REVIEW', 'R6_CHECK'];
+  if(activeSteps.includes(state.step) && state.customerName) {
+    $('#customerBadgetextContent' || 'customerBadge').textContent = `Customer: ${state.customerName}`;
+  } else {
+    $('#customerBadge').textContent = 'No customer';
+  }
 }
 
 function cancelTask(){
@@ -169,7 +260,11 @@ function cancelTask(){
     tktBefore:{},
     tktAfter:{},
     r6Warning:false,
-    step:'WELCOME'
+    step:'WELCOME',
+    editingHistoryIndex: undefined,
+    selectedFilterDate: 'ALL',
+    searchQuery: '',
+    searchType: ''
   });
   updateCustomerBadge();
   render();
@@ -187,30 +282,68 @@ function renderWelcome(main){
 }
 
 function renderHistory(main){
-  const card = cardEl('Task History', 'ဒီနေ့ လုပ်ဆောင်ခဲ့သော မှတ်တမ်းများ (Edit ပြုလုပ်နိုင်သည်)');
+  const card = cardEl('Task History', 'နေ့ရက်အလိုက် ခွဲခြားထားသော မှတ်တမ်းများ (Edit ပြុလုပ်နိုင်သည်)');
   let content = '';
-  if(state.history.length === 0) {
-    content = '<p class="help">မှတ်တမ်း မရှိသေးပါ။</p>';
+
+  let filteredHistory = state.history;
+  if(state.selectedFilterDate && state.selectedFilterDate !== 'ALL') {
+    filteredHistory = state.history.filter(h => (h.dateOnly || h.date.split(',')[0]) === state.selectedFilterDate);
+  }
+
+  // Dates list for filter dropdown inside history card if needed
+  const dates = Array.from(new Set(state.history.map(h => h.dateOnly || h.date.split(',')[0]))).filter(Boolean);
+
+  content += `
+    <div class="search-box-container">
+      <select id="historyDateSelect" style="flex:1;">
+        <option value="ALL">📅 Show All Dates</option>
+        ${dates.map(d=>`<option value="${d}" ${state.selectedFilterDate===d?'selected':''}>${d}</option>`).join('')}
+      </select>
+    </div>
+  `;
+
+  if(filteredHistory.length === 0) {
+    content += '<p class="help">မှတ်တမ်း မရှိသေးပါ။</p>';
   } else {
+    const groups = {};
+    filteredHistory.forEach(h => {
+      const d = h.dateOnly || h.date.split(',')[0] || 'Unknown Date';
+      if(!groups[d]) groups[d] = [];
+      groups[d].push(h);
+    });
+
     content += '<div class="history-container">';
-    state.history.forEach((h, idx)=>{
+    Object.keys(groups).forEach(dateStr => {
       content += `
-        <div class="history-item">
-          <strong>#${idx+1} [${h.type}] - ${h.customer}</strong><br/>
-          <small class="help">${h.date}</small><br/><br/>
-          <strong>--- BEFORE ---</strong>
-          <pre style="margin:5px 0; font-family:monospace; font-size:11px; white-space:pre-wrap;">${escapeHtml(h.beforeSummary)}</pre>
-          <br/>
-          <strong>--- AFTER ---</strong>
-          <pre style="margin:5px 0; font-family:monospace; font-size:11px; white-space:pre-wrap;">${escapeHtml(h.afterSummary)}</pre>
-          <div style="margin-top:10px;">
-            <button class="btn secondary" style="width:100%; font-size:13px; padding:6px;" onclick="editHistoryItem(${idx})">✏️ ဤမှတ်တမ်းကို ပြင်ဆင်မည် (Edit)</button>
+        <div class="day-group">
+          <div class="day-header">
+            <span>📅 ${dateStr}</span>
+            <span>(${groups[dateStr].length} tasks)</span>
           </div>
-        </div>
       `;
+      
+      groups[dateStr].forEach((h) => {
+        const originalIndex = state.history.indexOf(h);
+        content += `
+          <div class="history-item">
+            <strong># [${h.type}] - ${h.customer}</strong><br/>
+            <small class="help">🕒 ${h.timeOnly || h.date}</small><br/><br/>
+            <strong>--- BEFORE ---</strong>
+            <pre style="margin:5px 0; font-family:monospace; font-size:11px; white-space:pre-wrap;">${escapeHtml(h.beforeSummary)}</pre>
+            <br/>
+            <strong>--- AFTER ---</strong>
+            <pre style="margin:5px 0; font-family:monospace; font-size:11px; white-space:pre-wrap;">${escapeHtml(h.afterSummary)}</pre>
+            <div style="margin-top:10px;">
+              <button class="btn secondary" style="width:100%; font-size:13px; padding:6px;" onclick="editHistoryItem(${originalIndex})">✏️ ဤမှတ်တမ်းကို ပြင်ဆင်မည် (Edit)</button>
+            </div>
+          </div>
+        `;
+      });
+      content += `</div>`;
     });
     content += '</div>';
   }
+
   card.innerHTML += content;
   main.appendChild(card);
 
@@ -225,6 +358,69 @@ function renderHistory(main){
   main.appendChild(actionCard);
 
   $('#historyBottomBackBtn').onclick = ()=>{ state.step = 'WELCOME'; render(); };
+  
+  const hDateSelect = $('#historyDateSelect');
+  if(hDateSelect) {
+    hDateSelect.onchange = (e) => {
+      state.selectedFilterDate = e.target.value;
+      render();
+    };
+  }
+}
+
+function renderSearchResult(main){
+  const card = cardEl(`Search Result (${state.searchType})`, `Keyword: "${state.searchQuery}"`);
+  let results = [];
+  
+  if(state.searchType === 'Customer') {
+    results = state.history.filter(h => h.customer.toLowerCase().includes(state.searchQuery.toLowerCase()));
+  } else if(state.searchType === 'CPE') {
+    results = state.history.filter(h => {
+      const bText = (h.rawPoiBefore?.cpe || '') + (h.rawPoiAfter?.new_cpe || '') + (h.rawTktBefore?.new_sn || '');
+      return bText.toLowerCase().includes(state.searchQuery.toLowerCase());
+    });
+  } else if(state.searchType === 'Date') {
+    results = state.history.filter(h => (h.dateOnly || '').includes(state.searchQuery));
+  }
+
+  let content = '';
+  if(results.length === 0) {
+    content = '<p class="help">ရှာမတွေ့ပါ။</p>';
+  } else {
+    content += '<div class="history-container">';
+    results.forEach(h => {
+      const originalIndex = state.history.indexOf(h);
+      content += `
+        <div class="history-item">
+          <strong># [${h.type}] - ${h.customer}</strong><br/>
+          <small class="help">🕒 ${h.date}</small><br/><br/>
+          <strong>--- BEFORE ---</strong>
+          <pre style="margin:5px 0; font-family:monospace; font-size:11px; white-space:pre-wrap;">${escapeHtml(h.beforeSummary)}</pre>
+          <br/>
+          <strong>--- AFTER ---</strong>
+          <pre style="margin:5px 0; font-family:monospace; font-size:11px; white-space:pre-wrap;">${escapeHtml(h.afterSummary)}</pre>
+          <div style="margin-top:10px;">
+            <button class="btn secondary" style="width:100%; font-size:13px; padding:6px;" onclick="editHistoryItem(${originalIndex})">✏️ ပြင်ဆင်မည် (Edit)</button>
+          </div>
+        </div>
+      `;
+    });
+    content += '</div>';
+  }
+
+  card.innerHTML += content;
+  main.appendChild(card);
+
+  const actionCard = document.createElement('div');
+  actionCard.className = 'card';
+  actionCard.style.padding = '12px 16px';
+  actionCard.innerHTML = `
+    <div class="actions" style="margin-top:0;">
+      <button class="btn secondary" id="searchBackBtn" style="width:100%;">Back to Welcome</button>
+    </div>
+  `;
+  main.appendChild(actionCard);
+  $('#searchBackBtn').onclick = ()=>{ state.step = 'WELCOME'; render(); };
 }
 
 function editHistoryItem(idx) {
@@ -232,13 +428,18 @@ function editHistoryItem(idx) {
   if(!h) return;
   state.customerName = h.customer;
   state.taskType = h.type;
+  state.editingHistoryIndex = idx;
   
+  if(h.rawPoiBefore) state.poiBefore = {...h.rawPoiBefore};
+  if(h.rawPoiAfter) state.poiAfter = {...h.rawPoiAfter};
+  if(h.rawTktBefore) state.tktBefore = {...h.rawTktBefore};
+  if(h.rawTktAfter) state.tktAfter = {...h.rawTktAfter};
+
   if(h.type === 'POI') {
     state.step = 'POI_AFTER_FORM';
   } else {
     state.step = 'TKT_AFTER_FORM';
   }
-  state.editingHistoryIndex = idx;
   render();
 }
 
@@ -303,7 +504,7 @@ function collectData(keys, targetObj){
   });
 }
 
-/* POI */
+/* POI Forms and Reviews */
 const poiBeforeFields = ['poi_num','cus_lat','box_lat','box_name','plan','cpe','sn'];
 
 function renderPoiBeforeForm(main){
@@ -525,7 +726,7 @@ function renderPoiAfterReview(main){
   };
 }
 
-/* TKT */
+/* TKT Forms and Reviews */
 const tktBeforeFields = ['tkt_num','old_box','new_box','old_cid','old_sn','new_cid','new_sn','cus_lat','old_box_lat','new_box_lat','cable_cut','ssid','password','root_cause'];
 
 function renderTktBeforeForm(main){
@@ -749,12 +950,22 @@ function renderTktAfterReview(main){
 }
 
 function saveToHistory(type, beforeSummary, afterSummary){
+  const now = new Date();
+  const dateOnly = now.toLocaleDateString();
+  const timeOnly = now.toLocaleTimeString();
+
   const record = {
     type: type,
     customer: state.customerName,
-    date: new Date().toLocaleString(),
+    date: now.toLocaleString(),
+    dateOnly: dateOnly,
+    timeOnly: timeOnly,
     beforeSummary: beforeSummary,
     afterSummary: afterSummary,
+    rawPoiBefore: {...state.poiBefore},
+    rawPoiAfter: {...state.poiAfter},
+    rawTktBefore: {...state.tktBefore},
+    rawTktAfter: {...state.tktAfter},
     summary: `--- BEFORE ---\n${beforeSummary}\n\n--- AFTER ---\n${afterSummary}`
   };
   
@@ -832,6 +1043,105 @@ function completeTask(){
   alert('Task completed. You can start a new task.');
   cancelTask();
 }
+
+/* Sidebar Event Bindings & File Management */
+const sidebar = $('#sidebar');
+const sidebarOverlay = $('#sidebarOverlay');
+
+function toggleSidebar(open) {
+  if(open) {
+    sidebar.classList.add('open');
+    sidebarOverlay.classList.add('open');
+  } else {
+    sidebar.classList.remove('open');
+    sidebarOverlay.classList.remove('open');
+  }
+}
+
+$('#menuToggleBtn').onclick = () => toggleSidebar(true);
+$('#closeSidebarBtn').onclick = () => toggleSidebar(false);
+sidebarOverlay.onclick = () => toggleSidebar(false);
+
+$('#sbGoogleBackup').onclick = () => {
+  toggleSidebar(false);
+  if(APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') {
+    alert('Google Apps Script URL ထည့်သွင်းထားခြင်း မရှိသေးပါ။');
+    return;
+  }
+  backupToGoogleDrive();
+};
+
+$('#sbSearchCustomer').onclick = () => {
+  toggleSidebar(false);
+  const query = prompt('Enter Customer Name to search:');
+  if(query) {
+    state.searchQuery = query.trim();
+    state.searchType = 'Customer';
+    state.step = 'SEARCH_RESULT';
+    render();
+  }
+};
+
+$('#sbSearchCpe').onclick = () => {
+  toggleSidebar(false);
+  const query = prompt('Enter CPE / SN to search:');
+  if(query) {
+    state.searchQuery = query.trim();
+    state.searchType = 'CPE';
+    state.step = 'SEARCH_RESULT';
+    render();
+  }
+};
+
+$('#sbSearchDate').onclick = () => {
+  toggleSidebar(false);
+  const query = prompt('Enter Date (e.g. 10/10/2026):');
+  if(query) {
+    state.searchQuery = query.trim();
+    state.searchType = 'Date';
+    state.step = 'SEARCH_RESULT';
+    render();
+  }
+};
+
+$('#sbExportFile').onclick = () => {
+  toggleSidebar(false);
+  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state.history, null, 2));
+  const downloadAnchor = document.createElement('a');
+  downloadAnchor.setAttribute("href", dataStr);
+  downloadAnchor.setAttribute("download", `field_reports_backup_${new Date().toISOString().slice(0,10)}.json`);
+  document.body.appendChild(downloadAnchor);
+  downloadAnchor.click();
+  downloadAnchor.remove();
+  alert('ဖိုင်အဖြစ် အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ (Export Successful)');
+};
+
+$('#sbImportFile').onclick = () => {
+  toggleSidebar(false);
+  $('#importFileInput').click();
+};
+
+$('#importFileInput').onchange = (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    try {
+      const imported = JSON.parse(event.target.result);
+      if(Array.isArray(imported)) {
+        state.history = imported;
+        localStorage.setItem('field_report_history', JSON.stringify(state.history));
+        alert('ဖိုင်ထဲမှ အချက်အလက်များကို အောင်မြင်စွာ တင်ပြီးပါပြီ (Import Successful)');
+        render();
+      } else {
+        alert('ဖိုင်ပုံစံ မှားယွင်းနေပါသည်။');
+      }
+    } catch(err) {
+      alert('JSON ဖိုင်ကို ဖတ်၍မရပါ။');
+    }
+  };
+  reader.readAsText(file);
+};
 
 /* Helpers */
 function fields(defs){
