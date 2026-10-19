@@ -23,14 +23,11 @@ jobs:
           yes | sdkmanager --licenses > /dev/null || true
           sdkmanager "platforms;android-34" "build-tools;34.0.0"
 
-      - name: Install Gradle 8.7
-        run: |
-          wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip
-          unzip -q gradle-8.7-bin.zip
-          sudo mv gradle-8.7 /opt/gradle
-          echo "/opt/gradle/bin" >> $GITHUB_PATH
+      - uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: 8.7
 
-      - name: Generate Gradle build files
+      - name: Generate Gradle build files (legacy layout)
         run: |
           cat > settings.gradle <<'EOF'
           pluginManagement {
@@ -66,7 +63,7 @@ jobs:
               compileSdk = 34
 
               signingConfigs {
-                  release {
+                  debug {
                       storeFile file("../fieldreportforbops6.keystore")
                       storePassword = providers.environmentVariable("SIGNSTORE_PASSWORD").getOrNull()
                       keyAlias = providers.environmentVariable("SIGNKEY_ALIAS").getOrNull()
@@ -83,9 +80,8 @@ jobs:
               }
 
               buildTypes {
-                  release {
-                      minifyEnabled = false
-                      signingConfig = signingConfigs.release
+                  debug {
+                      signingConfig = signingConfigs.debug
                   }
               }
 
@@ -108,18 +104,18 @@ jobs:
         run: |
           sed -i 's/android:minSdkVersion="12"/android:minSdkVersion="24"/' AndroidManifest.xml
           sed -i 's/android:targetSdkVersion="27"/android:targetSdkVersion="34"/' AndroidManifest.xml
+          cat AndroidManifest.xml
 
-      - name: Build APK with Gradle
-        run: gradle :app:assembleRelease --stacktrace
+      - run: gradle :app:assembleDebug
         env:
           SIGNSTORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
           SIGNKEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           SIGNKEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: Rename APK
-        run: mv app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/fieldreportforbops6.apk
+        run: mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/fieldreportforbops6.apk
 
       - uses: actions/upload-artifact@v4
         with:
           name: fieldreportforbops6
-          path: app/build/outputs/apk/release/fieldreportforbops6.apk
+          path: app/build/outputs/apk/debug/fieldreportforbops6.apk
