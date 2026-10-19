@@ -26,30 +26,79 @@ jobs:
       - uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: 8.7
-          cache-disabled: true
 
-      - name: Decode Keystore
+      - name: Generate Gradle build files (legacy layout)
         run: |
-          echo "${{ secrets.SIGNING_KEY }}" | base64 --decode > fieldreportforbops6.keystore
+          cat > settings.gradle <<'EOF'
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.name = "WebView Apk Template"
+          include(":app")
+          EOF
+          cat > build.gradle <<'EOF'
+          plugins {
+              id("com.android.application") version "8.5.2" apply false
+          }
+          EOF
+          mkdir -p app
+          cat > app/build.gradle <<'EOF'
+          plugins {
+              id("com.android.application")
+          }
+
+          android {
+              namespace = "com.fazlerabbi.porimap"
+              compileSdk = 34
+
+              defaultConfig {
+                  applicationId = "com.fazlerabbi.porimap"
+                  minSdk = 24
+                  targetSdk = 34
+                  versionCode = 1
+                  versionName = "1.0"
+              }
+
+              buildTypes {
+                  release {
+                      minifyEnabled = false
+                  }
+              }
+
+              sourceSets {
+                  getByName("main") {
+                      manifest.srcFile("../AndroidManifest.xml")
+                      java.srcDirs("../src")
+                      res.srcDirs("../res")
+                      assets.srcDirs("../assets")
+                  }
+              }
+          }
+          EOF
 
       - name: Patch manifest for Android 12+
         run: |
-          if [ -f AndroidManifest.xml ]; then
-            sed -i 's/android:minSdkVersion="12"/android:minSdkVersion="24"/' AndroidManifest.xml || true
-            sed -i 's/android:targetSdkVersion="27"/android:targetSdkVersion="34"/' AndroidManifest.xml || true
-          fi
+          sed -i 's/android:minSdkVersion="12"/android:minSdkVersion="24"/' AndroidManifest.xml
+          sed -i 's/android:targetSdkVersion="27"/android:targetSdkVersion="34"/' AndroidManifest.xml
+          cat AndroidManifest.xml
 
-      - name: Build Release APK with Signature
-        run: gradle :app:assembleRelease
-        env:
-          SIGNSTORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
-          SIGNKEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          SIGNKEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+      - run: gradle :app:assembleDebug
 
       - name: Rename APK
-        run: mv app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/fieldreportforbops6.apk
+        run: mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/Porimap.apk
 
       - uses: actions/upload-artifact@v4
         with:
-          name: fieldreportforbops6
-          path: app/build/outputs/apk/release/fieldreportforbops6.apk
+          name: Porimap
+          path: app/build/outputs/apk/debug/Porimap.apk
