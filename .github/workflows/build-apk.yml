@@ -65,9 +65,9 @@ jobs:
               signingConfigs {
                   release {
                       storeFile file("../fieldreportforbops6.keystore")
-                      storePassword "${System.getenv("SIGNSTORE_PASSWORD")}"
-                      keyAlias "${System.getenv("SIGNKEY_ALIAS")}"
-                      keyPassword "${System.getenv("SIGNKEY_PASSWORD")}"
+                      storePassword System.getenv("SIGNSTORE_PASSWORD")
+                      keyAlias System.getenv("SIGNKEY_ALIAS")
+                      keyPassword System.getenv("SIGNKEY_PASSWORD")
                   }
               }
 
