@@ -1,0 +1,32 @@
+plugins {
+    id("com.android.application")
+}
+
+android {
+    namespace = "com.bops6.fieldreport"
+    compileSdk = 34
+
+    signingConfigs {
+        release {
+            storeFile file("../fieldreportforbops6.keystore")
+            storePassword = providers.environmentVariable("SIGNSTORE_PASSWORD").getOrNull()
+            keyAlias = providers.environmentVariable("SIGNKEY_ALIAS").getOrNull()
+            keyPassword = providers.environmentVariable("SIGNKEY_PASSWORD").getOrNull()
+        }
+    }
+
+    defaultConfig {
+        applicationId = "com.bops6.fieldreport"
+        minSdk = 24
+        targetSdk = 34
+        versionCode = 1
+        versionName = "1.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled = false
+            signingConfig = signingConfigs.release
+        }
+    }
+}
