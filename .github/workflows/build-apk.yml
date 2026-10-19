@@ -59,7 +59,7 @@ jobs:
           }
 
           android {
-              namespace = "com.bops6.fieldreport"
+              namespace = "com.fazlerabbi.porimap"
               compileSdk = 34
 
               signingConfigs {
@@ -72,7 +72,7 @@ jobs:
               }
 
               defaultConfig {
-                  applicationId = "com.bops6.fieldreport"
+                  applicationId = "com.fazlerabbi.porimap"
                   minSdk = 24
                   targetSdk = 34
                   versionCode = 1
@@ -113,9 +113,9 @@ jobs:
           SIGNKEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: Rename APK
-        run: mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/fieldreportforbops6.apk
+        run: mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/Porimap.apk
 
       - uses: actions/upload-artifact@v4
         with:
-          name: fieldreportforbops6
-          path: app/build/outputs/apk/debug/fieldreportforbops6.apk
+          name: Porimap
+          path: app/build/outputs/apk/debug/Porimap.apk
