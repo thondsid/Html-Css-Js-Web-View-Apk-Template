@@ -25,12 +25,12 @@ jobs:
 
       - name: Install Gradle 8.7
         run: |
-          wget https://services.gradle.org/distributions/gradle-8.7-bin.zip
+          wget -q https://services.gradle.org/distributions/gradle-8.7-bin.zip
           unzip -q gradle-8.7-bin.zip
           sudo mv gradle-8.7 /opt/gradle
           echo "/opt/gradle/bin" >> $GITHUB_PATH
 
-      - name: Generate Gradle build files (legacy layout)
+      - name: Generate Gradle build files
         run: |
           cat > settings.gradle <<'EOF'
           pluginManagement {
@@ -68,9 +68,9 @@ jobs:
               signingConfigs {
                   release {
                       storeFile file("../fieldreportforbops6.keystore")
-                      storePassword System.getenv("SIGNSTORE_PASSWORD")
-                      keyAlias System.getenv("SIGNKEY_ALIAS")
-                      keyPassword System.getenv("SIGNKEY_PASSWORD")
+                      storePassword = providers.environmentVariable("SIGNSTORE_PASSWORD").getOrNull()
+                      keyAlias = providers.environmentVariable("SIGNKEY_ALIAS").getOrNull()
+                      keyPassword = providers.environmentVariable("SIGNKEY_PASSWORD").getOrNull()
                   }
               }
 
@@ -109,7 +109,8 @@ jobs:
           sed -i 's/android:minSdkVersion="12"/android:minSdkVersion="24"/' AndroidManifest.xml
           sed -i 's/android:targetSdkVersion="27"/android:targetSdkVersion="34"/' AndroidManifest.xml
 
-      - run: gradle :app:assembleRelease --stacktrace
+      - name: Build APK with Gradle
+        run: gradle :app:assembleRelease --stacktrace
         env:
           SIGNSTORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
           SIGNKEY_ALIAS: ${{ secrets.KEY_ALIAS }}
