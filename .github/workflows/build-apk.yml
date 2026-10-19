@@ -62,15 +62,6 @@ jobs:
               namespace = "com.fazlerabbi.porimap"
               compileSdk = 34
 
-              signingConfigs {
-                  debug {
-                      storeFile file("../fieldreportforbops6.keystore")
-                      storePassword = providers.environmentVariable("SIGNSTORE_PASSWORD").getOrNull()
-                      keyAlias = providers.environmentVariable("SIGNKEY_ALIAS").getOrNull()
-                      keyPassword = providers.environmentVariable("SIGNKEY_PASSWORD").getOrNull()
-                  }
-              }
-
               defaultConfig {
                   applicationId = "com.fazlerabbi.porimap"
                   minSdk = 24
@@ -80,8 +71,8 @@ jobs:
               }
 
               buildTypes {
-                  debug {
-                      signingConfig = signingConfigs.debug
+                  release {
+                      minifyEnabled = false
                   }
               }
 
@@ -96,10 +87,6 @@ jobs:
           }
           EOF
 
-      - name: Decode Keystore
-        run: |
-          echo "${{ secrets.SIGNING_KEY }}" | base64 --decode > fieldreportforbops6.keystore
-
       - name: Patch manifest for Android 12+
         run: |
           sed -i 's/android:minSdkVersion="12"/android:minSdkVersion="24"/' AndroidManifest.xml
@@ -107,10 +94,6 @@ jobs:
           cat AndroidManifest.xml
 
       - run: gradle :app:assembleDebug
-        env:
-          SIGNSTORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
-          SIGNKEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          SIGNKEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: Rename APK
         run: mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/Porimap.apk
